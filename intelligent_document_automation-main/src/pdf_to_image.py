@@ -6,11 +6,11 @@ Each page in a PDF is converted to a separate image file.
 """
 
 import os
-from pdf2image import convert_from_path
 from pathlib import Path
 
-# ✅ HARD-CODED POPPLER PATH (Windows safe)
-POPPLER_PATH = r"C:\Users\ruchi\OneDrive\Desktop\Release-25.12.0-0\poppler-25.12.0\Library\bin"
+# Poppler path: allow override via environment variable `POPPLER_PATH`.
+# Keep None as default so pdf2image will try to use PATH when available.
+POPPLER_PATH = os.environ.get("POPPLER_PATH")
 
 
 def convert_pdf_to_images(pdf_path: str, output_dir: str) -> list:
@@ -40,9 +40,21 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str) -> list:
     pdf_name = Path(pdf_path).stem
     
     try:
+        # Lazy import to avoid hard failure when optional dependency is missing
+        try:
+            from pdf2image import convert_from_path
+        except Exception as ie:
+            raise ImportError(
+                "Missing dependency: pdf2image. Install it with 'pip install pdf2image' "
+                "and ensure Poppler is installed and its bin is on PATH or set POPPLER_PATH env var."
+            ) from ie
+
         # Convert PDF to images with DPI 200 for better OCR accuracy
         print(f"Converting PDF: {pdf_path}")
-        images = convert_from_path(pdf_path, dpi=200, poppler_path=POPPLER_PATH)
+        if POPPLER_PATH:
+            images = convert_from_path(pdf_path, dpi=200, poppler_path=POPPLER_PATH)
+        else:
+            images = convert_from_path(pdf_path, dpi=200)
         
         image_paths = []
         

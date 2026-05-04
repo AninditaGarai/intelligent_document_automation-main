@@ -5,11 +5,19 @@ Exports extracted data, classified documents, matched fields, and semantic match
 Creates formatted, well-organized Excel workbooks with multiple sheets.
 """
 
-import openpyxl
-from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 import os
 from pathlib import Path
+import csv
+
+
+def _try_import_openpyxl():
+    try:
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        return openpyxl, Font, PatternFill, Alignment, Border, Side, get_column_letter
+    except Exception:
+        return None, None, None, None, None, None, None
 
 
 class ExcelExporter:
@@ -20,29 +28,47 @@ class ExcelExporter:
     
     def __init__(self):
         """Initialize style templates."""
-        
-        self.header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
-        self.header_font = Font(bold=True, color='FFFFFF', size=11)
-        self.title_fill = PatternFill(start_color='2F5496', end_color='2F5496', fill_type='solid')
-        self.title_font = Font(bold=True, color='FFFFFF', size=12)
-        self.matched_fill = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')
-        self.unmatched_fill = PatternFill(start_color='FCE4D6', end_color='FCE4D6', fill_type='solid')
-        
-        self.border = Border(
-            left=Side(style='thin'),
-            right=Side(style='thin'),
-            top=Side(style='thin'),
-            bottom=Side(style='thin')
-        )
-        
-        self.alignment_wrap = Alignment(wrap_text=True, vertical='top')
+        openpyxl_mod, Font, PatternFill, Alignment, Border, Side, get_column_letter = _try_import_openpyxl()
+
+        if openpyxl_mod:
+            self._has_openpyxl = True
+            self.header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
+            self.header_font = Font(bold=True, color='FFFFFF', size=11)
+            self.title_fill = PatternFill(start_color='2F5496', end_color='2F5496', fill_type='solid')
+            self.title_font = Font(bold=True, color='FFFFFF', size=12)
+            self.matched_fill = PatternFill(start_color='E2EFDA', end_color='E2EFDA', fill_type='solid')
+            self.unmatched_fill = PatternFill(start_color='FCE4D6', end_color='FCE4D6', fill_type='solid')
+            
+            self.border = Border(
+                left=Side(style='thin'),
+                right=Side(style='thin'),
+                top=Side(style='thin'),
+                bottom=Side(style='thin')
+            )
+            
+            self.alignment_wrap = Alignment(wrap_text=True, vertical='top')
+        else:
+            self._has_openpyxl = False
+            # fallback fills/fonts to None when openpyxl isn't present
+            self.header_fill = None
+            self.header_font = None
+            self.title_fill = None
+            self.title_font = None
+            self.matched_fill = None
+            self.unmatched_fill = None
+            self.border = None
+            self.alignment_wrap = None
     
     def _set_cell_style(self, cell, bold=False, fill=None, font_color='000000'):
         """Apply styling to a cell."""
+        # No-op when openpyxl not available
+        if not self._has_openpyxl:
+            return
         cell.border = self.border
         cell.alignment = self.alignment_wrap
         if bold:
-            cell.font = Font(bold=True, color=font_color)
+            from openpyxl.styles import Font as _Font
+            cell.font = _Font(bold=True, color=font_color)
         if fill:
             cell.fill = fill
     
@@ -55,7 +81,26 @@ class ExcelExporter:
             output_path (str): Path to output Excel file
         """
         
-        wb = openpyxl.Workbook()
+        openpyxl_mod, *_ = _try_import_openpyxl()
+        if openpyxl_mod is None:
+            # Fallback: write CSV instead
+            csv_path = os.path.splitext(output_path)[0] + '.csv'
+            os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+            headers = ['Document Name', 'Field', 'Value', 'Confidence (%)', 'Extraction Method', 'Notes']
+            with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(headers)
+                for doc_name, fields in extracted_data.items():
+                    for field_name, field_data in fields.items():
+                        field_display = field_name.replace('_', ' ').title()
+                        value = field_data.get('name') or field_data.get('organization') or field_data.get('currency') or field_data.get('address') or 'Not Found'
+                        confidence = field_data.get('confidence', 0)
+                        method = field_data.get('method', 'unknown')
+                        explanation = field_data.get('explanation', '')
+                        writer.writerow([doc_name, field_display, value, confidence, method, explanation])
+            print(f"openpyxl not available; wrote CSV to: {csv_path}\n")
+            return
+        wb = openpyxl_mod.Workbook()
         ws = wb.active
         ws.title = "Extracted Fields"
         
@@ -129,7 +174,25 @@ class ExcelExporter:
             output_path (str): Path to output Excel file
         """
         
-        wb = openpyxl.Workbook()
+        openpyxl_mod, *_ = _try_import_openpyxl()
+        if openpyxl_mod is None:
+            # Fallback CSV
+            csv_path = os.path.splitext(output_path)[0] + '.csv'
+            os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+            headers = ['Document Name', 'Classified Type', 'Confidence (%)', 'Keywords Found', 'Match Counts']
+            with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(headers)
+                for doc_name, classification in classifications.items():
+                    doc_type = classification.get('document_type', 'Unknown')
+                    confidence = classification.get('confidence', 0)
+                    keywords = ', '.join(classification.get('found_keywords', []))
+                    match_counts = classification.get('match_counts', {})
+                    counts_str = f"Q:{match_counts.get('quotation', 0)}, SOW:{match_counts.get('sow', 0)}, C:{match_counts.get('contract', 0)}"
+                    writer.writerow([doc_name, doc_type, confidence, keywords, counts_str])
+            print(f"openpyxl not available; wrote CSV to: {csv_path}\n")
+            return
+        wb = openpyxl_mod.Workbook()
         ws = wb.active
         ws.title = "Document Classification"
         
@@ -180,7 +243,25 @@ class ExcelExporter:
             output_path (str): Path to output Excel file
         """
         
-        wb = openpyxl.Workbook()
+        openpyxl_mod, *_ = _try_import_openpyxl()
+        if openpyxl_mod is None:
+            # Fallback CSV for matching data
+            csv_path = os.path.splitext(output_path)[0] + '.csv'
+            os.makedirs(os.path.dirname(csv_path), exist_ok=True)
+            headers = ['Document Pair', 'Total Fields', 'Matched', 'Likely Matched', 'Overall Score (/100)']
+            with open(csv_path, 'w', newline='', encoding='utf-8') as csvfile:
+                writer = csv.writer(csvfile)
+                writer.writerow(headers)
+                for match_result in matching_data:
+                    doc_pair = f"{match_result['document_1']} <-> {match_result['document_2']}"
+                    total = match_result['total_fields_compared']
+                    matched = match_result['matched_fields']
+                    likely = match_result['likely_matched_fields']
+                    score = match_result['overall_match_score']
+                    writer.writerow([doc_pair, total, matched, likely, score])
+            print(f"openpyxl not available; wrote CSV to: {csv_path}\n")
+            return
+        wb = openpyxl_mod.Workbook()
         
         # Create summary sheet
         ws_summary = wb.active

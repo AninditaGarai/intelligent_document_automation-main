@@ -9,13 +9,29 @@ Prepares scanned images for OCR by:
 - Deskewing (if needed)
 """
 
-import cv2
-import numpy as np
 import os
 from pathlib import Path
 
 
-def preprocess_image(image_path: str, output_path: str = None) -> np.ndarray:
+def _require_cv2():
+    try:
+        import cv2
+        return cv2
+    except Exception as e:
+        raise ImportError(
+            "Missing dependency: opencv-python (cv2). Install with 'pip install opencv-python'"
+        ) from e
+
+
+def _require_numpy():
+    try:
+        import numpy as np
+        return np
+    except Exception as e:
+        raise ImportError("Missing dependency: numpy. Install with 'pip install numpy'") from e
+
+
+def preprocess_image(image_path: str, output_path: str = None) -> 'np.ndarray':
     """
     Preprocess a single image for OCR.
     
@@ -43,6 +59,7 @@ def preprocess_image(image_path: str, output_path: str = None) -> np.ndarray:
         raise FileNotFoundError(f"Image file not found: {image_path}")
     
     try:
+        cv2 = _require_cv2()
         # Read image
         print(f"Processing: {Path(image_path).name}")
         img = cv2.imread(image_path)
@@ -144,11 +161,14 @@ def get_image_quality_metrics(image_path: str) -> dict:
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Image file not found: {image_path}")
     
+    cv2 = _require_cv2()
+    np = _require_numpy()
+
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    
+
     if img is None:
         raise ValueError(f"Failed to read image: {image_path}")
-    
+
     metrics = {
         'mean_brightness': float(np.mean(img)),
         'contrast': float(np.std(img)),

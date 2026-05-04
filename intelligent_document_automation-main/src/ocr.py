@@ -5,9 +5,19 @@ Extracts text from preprocessed images using Tesseract OCR.
 Produces both raw text and confidence-scored text for reliability analysis.
 """
 
-import pytesseract
 import os
 from pathlib import Path
+
+
+def _require_pytesseract():
+    try:
+        import pytesseract
+        return pytesseract
+    except Exception as e:
+        raise ImportError(
+            "Missing dependency: pytesseract. Install with 'pip install pytesseract' "
+            "and ensure Tesseract OCR is installed and available on PATH."
+        ) from e
 
 
 def extract_text_from_image(image_path: str) -> str:
@@ -31,6 +41,7 @@ def extract_text_from_image(image_path: str) -> str:
     try:
         print(f"OCR Processing: {Path(image_path).name}")
         
+        pytesseract = _require_pytesseract()
         # Tesseract configuration for better accuracy
         # psm modes:
         # 6 = Assume a single uniform block of text (default)
@@ -67,6 +78,7 @@ def extract_text_with_confidence(image_path: str) -> dict:
     
     try:
         # Get detailed information from Tesseract
+        pytesseract = _require_pytesseract()
         data = pytesseract.image_to_data(image_path, output_type=pytesseract.Output.DICT)
         
         # Extract words and their confidence scores
