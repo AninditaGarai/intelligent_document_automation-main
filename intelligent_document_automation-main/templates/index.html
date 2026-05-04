@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Intelligent Document Automation</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="page-shell">
+    <header class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Hybrid Pattern-Semantic Verification</p>
+        <h1>Process scanned PDFs in a clean web workspace.</h1>
+        <p class="lede">Upload one or more PDFs, run OCR, field extraction, classification, and matching, then download the generated reports.</p>
+      </div>
+      <div class="hero-panel">
+        <div class="stat">
+          <span>Backend</span>
+          <strong>Reusable Python pipeline</strong>
+        </div>
+        <div class="stat">
+          <span>Frontend</span>
+          <strong>Flask upload dashboard</strong>
+        </div>
+        <div class="stat">
+          <span>Output</span>
+          <strong>Excel or CSV fallback</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="content-grid">
+      <section class="card upload-card">
+        <h2>Upload PDFs</h2>
+        <form method="post" enctype="multipart/form-data" class="upload-form">
+          <label class="dropzone">
+            <input type="file" name="pdf_files" accept="application/pdf" multiple>
+            <span>Drop PDFs here or browse to select files</span>
+            <small>Multiple files are supported.</small>
+          </label>
+          <button type="submit">Run pipeline</button>
+        </form>
+        {% if error %}
+        <div class="alert error">{{ error }}</div>
+        {% endif %}
+        {% if uploaded_files %}
+        <div class="alert success">
+          Uploaded {{ uploaded_files|length }} file(s): {{ uploaded_files | join(', ') }}
+        </div>
+        {% endif %}
+      </section>
+
+      <section class="card results-card">
+        <div class="section-header">
+          <h2>Latest Run</h2>
+          {% if result and result.status == 'ok' %}
+          <span class="badge success">Completed</span>
+          {% elif result and result.status == 'no_input' %}
+          <span class="badge muted">No input</span>
+          {% endif %}
+        </div>
+
+        {% if result %}
+          {% if result.status == 'ok' %}
+          <div class="metrics">
+            <div class="metric"><span>Documents</span><strong>{{ result.summary.documents_processed }}</strong></div>
+            <div class="metric"><span>Types</span><strong>{{ result.summary.document_types_identified }}</strong></div>
+            <div class="metric"><span>Fields</span><strong>{{ result.summary.fields_extracted }}</strong></div>
+            <div class="metric"><span>Pairs</span><strong>{{ result.summary.document_pairs_matched }}</strong></div>
+          </div>
+
+          <div class="file-list">
+            <h3>Output files</h3>
+            {% for item in result.output_items %}
+              <a class="download-row" href="{{ item.download_url }}">
+                <span>{{ item.filename }}</span>
+                <span>Download</span>
+              </a>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="alert muted">{{ result.message }}</div>
+          {% endif %}
+        {% else %}
+        <div class="empty-state">
+          <h3>No run yet</h3>
+          <p>Upload a few PDFs to generate structured reports and matching results.</p>
+        </div>
+        {% endif %}
+      </section>
+    </main>
+  </div>
+</body>
+</html>

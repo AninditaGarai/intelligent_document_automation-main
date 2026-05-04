@@ -315,6 +315,18 @@ Download from: https://github.com/oschwartz10612/poppler-windows/releases/
 sudo apt-get install poppler-utils
 ```
 
+### Web Frontend
+
+The project now includes a small Flask-based upload dashboard in addition to the CLI pipeline.
+
+Start it with:
+
+```bash
+python web_app.py
+```
+
+Then open `http://127.0.0.1:5000` in your browser, upload one or more PDF files, and download the generated reports from the results panel.
+
 ---
 
 ## Execution Guide
@@ -325,6 +337,12 @@ sudo apt-get install poppler-utils
 # Place your PDF files in input_pdfs/ folder
 
 python src/main.py
+```
+
+For the browser UI, run:
+
+```bash
+python web_app.py
 ```
 
 ### Step-by-Step Execution
@@ -348,6 +366,11 @@ python src/main.py
    - `Extracted_Fields.xlsx` - Extracted data from each document
    - `Document_Classification.xlsx` - Document type classifications
    - `Hybrid_Matching_Results.xlsx` - Field matching with detailed layer analysis
+
+5. **Use the Web Dashboard**
+  - Open `http://127.0.0.1:5000`
+  - Upload PDFs through the browser form
+  - Download generated files directly from the results panel
 
 ---
 
