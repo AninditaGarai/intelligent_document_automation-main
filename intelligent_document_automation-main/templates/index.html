@@ -33,13 +33,14 @@
     <main class="content-grid">
       <section class="card upload-card">
         <h2>Upload PDFs</h2>
-        <form method="post" enctype="multipart/form-data" class="upload-form">
-          <label class="dropzone">
-            <input type="file" name="pdf_files" accept="application/pdf" multiple>
+        <form method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm">
+          <label class="dropzone" id="dropzone">
+            <input type="file" name="pdf_files" accept="application/pdf" multiple id="fileInput">
             <span>Drop PDFs here or browse to select files</span>
             <small>Multiple files are supported.</small>
+            <small class="file-count" id="fileCount"></small>
           </label>
-          <button type="submit">Run pipeline</button>
+          <button type="submit" id="submitBtn">Run pipeline</button>
         </form>
         {% if error %}
         <div class="alert error">{{ error }}</div>
@@ -135,5 +136,73 @@
       </section>
     </main>
   </div>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const fileCount = document.getElementById('fileCount');
+    const uploadForm = document.getElementById('uploadForm');
+
+    // Handle file selection
+    fileInput.addEventListener('change', function(e) {
+      updateFileCount();
+    });
+
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, preventDefaults, false);
+      document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // Handle drag over
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, unhighlight, false);
+    });
+
+    function highlight(e) {
+      dropzone.classList.add('drag-over');
+    }
+
+    function unhighlight(e) {
+      dropzone.classList.remove('drag-over');
+    }
+
+    // Handle dropped files
+    dropzone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      fileInput.files = files;
+      updateFileCount();
+    }
+
+    // Update file count display
+    function updateFileCount() {
+      const count = fileInput.files.length;
+      if (count > 0) {
+        fileCount.textContent = `${count} file(s) selected`;
+      } else {
+        fileCount.textContent = '';
+      }
+    }
+
+    // Handle form submission with loading state
+    uploadForm.addEventListener('submit', function(e) {
+      if (fileInput.files.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one PDF file.');
+      }
+    });
+  </script>
 </body>
 </html>

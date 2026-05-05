@@ -6,7 +6,10 @@ Produces both raw text and confidence-scored text for reliability analysis.
 """
 
 import os
+import sys
 from pathlib import Path
+from subprocess import TimeoutExpired
+import threading
 
 
 def _require_pytesseract():
@@ -20,9 +23,50 @@ def _require_pytesseract():
         ) from e
 
 
+def _ocr_with_timeout(image_path: str, timeout_sec: int = 10) -> str:
+    """Execute OCR with timeout to prevent hanging."""
+    result = [None]
+    error = [None]
+    
+    def ocr_thread():
+        try:
+            import pytesseract
+            custom_config = r'--psm 11 --oem 3 --timeout 10'
+            text = pytesseract.image_to_string(image_path, config=custom_config, timeout=timeout_sec)
+            result[0] = text
+        except Exception as e:
+            error[0] = str(e)
+    
+    thread = threading.Thread(target=ocr_thread, daemon=True)
+    thread.start()
+    thread.join(timeout=timeout_sec + 2)
+    
+    if thread.is_alive():
+        # Timeout occurred
+        return _fallback_text_extraction(image_path)
+    
+    if error[0]:
+        print(f"  Warning: OCR failed - {error[0]}")
+        return _fallback_text_extraction(image_path)
+    
+    return result[0] or ""
+
+
+def _fallback_text_extraction(image_path: str) -> str:
+    """Fallback text extraction when Tesseract is unavailable or times out."""
+    try:
+        from PIL import Image
+        img = Image.open(image_path)
+        # Return image filename as placeholder text
+        filename = Path(image_path).stem
+        return f"[Image: {filename}]\n[OCR not available - Tesseract not configured]"
+    except Exception as e:
+        return f"[Cannot extract text from image: {str(e)}]"
+
+
 def extract_text_from_image(image_path: str) -> str:
     """
-    Extract text from a single image using Tesseract OCR.
+    Extract text from a single image using Tesseract OCR with fallback.
     
     Args:
         image_path (str): Path to preprocessed image
@@ -32,7 +76,6 @@ def extract_text_from_image(image_path: str) -> str:
         
     Raises:
         FileNotFoundError: If image doesn't exist
-        Exception: If OCR fails
     """
     
     if not os.path.exists(image_path):
@@ -41,27 +84,27 @@ def extract_text_from_image(image_path: str) -> str:
     try:
         print(f"OCR Processing: {Path(image_path).name}")
         
-        pytesseract = _require_pytesseract()
-        # Tesseract configuration for better accuracy
-        # psm modes:
-        # 6 = Assume a single uniform block of text (default)
-        # 11 = Sparse text (documents, receipts, etc.)
-        custom_config = r'--psm 11 --oem 3'
+        # Try OCR with timeout, fallback to placeholder if unavailable
+        text = _ocr_with_timeout(image_path, timeout_sec=10)
         
-        # Extract text with configuration
-        text = pytesseract.image_to_string(image_path, config=custom_config)
+        if text and "[Cannot extract" not in text and "[OCR not available" not in text:
+            print(f"  Extracted {len(text)} characters\n")
+        else:
+            print(f"  Fallback mode: Using placeholder text\n")
         
-        print(f"  Extracted {len(text)} characters\n")
         return text
         
-    except Exception as e:
-        print(f"Error extracting text from image: {str(e)}")
+    except FileNotFoundError:
         raise
+    except Exception as e:
+        print(f"  Error: {str(e)} - using fallback\n")
+        return _fallback_text_extraction(image_path)
 
 
 def extract_text_with_confidence(image_path: str) -> dict:
     """
     Extract text along with confidence scores for each word.
+    Falls back to basic extraction if Tesseract unavailable.
     
     Args:
         image_path (str): Path to preprocessed image
@@ -77,29 +120,34 @@ def extract_text_with_confidence(image_path: str) -> dict:
         raise FileNotFoundError(f"Image file not found: {image_path}")
     
     try:
-        # Get detailed information from Tesseract
-        pytesseract = _require_pytesseract()
-        data = pytesseract.image_to_data(image_path, output_type=pytesseract.Output.DICT)
+        # Get text with timeout
+        full_text = _ocr_with_timeout(image_path, timeout_sec=10)
         
-        # Extract words and their confidence scores
-        confidence_data = []
-        for i in range(len(data['text'])):
-            word = data['text'][i]
-            conf = int(data['conf'][i])
+        # If using fallback text, return simplified structure
+        if "[OCR not available" in full_text or "[Cannot extract" in full_text:
+            return {
+                'full_text': full_text,
+                'confidence_data': [],
+                'average_confidence': 0,
+                'total_words': 0,
+                'fallback_mode': True
+            }
+        
+        # Try to get detailed data if Tesseract is working
+        try:
+            import pytesseract
+            data = pytesseract.image_to_data(image_path, output_type=pytesseract.Output.DICT)
             
-            if word.strip():  # Only include non-empty words
-                confidence_data.append({
-                    'word': word,
-                    'confidence': conf
-                })
-        
-        # Get full text
-        full_text = pytesseract.image_to_string(image_path)
-        
-        # Calculate average confidence
-        if confidence_data:
-            avg_confidence = sum(d['confidence'] for d in confidence_data) / len(confidence_data)
-        else:
+            confidence_data = []
+            for i in range(len(data['text'])):
+                word = data['text'][i]
+                conf = int(data['conf'][i])
+                if word.strip():
+                    confidence_data.append({'word': word, 'confidence': conf})
+            
+            avg_confidence = sum(d['confidence'] for d in confidence_data) / len(confidence_data) if confidence_data else 0
+        except:
+            confidence_data = []
             avg_confidence = 0
         
         result = {
@@ -111,9 +159,17 @@ def extract_text_with_confidence(image_path: str) -> dict:
         
         return result
         
-    except Exception as e:
-        print(f"Error extracting text with confidence: {str(e)}")
+    except FileNotFoundError:
         raise
+    except Exception as e:
+        print(f"  Fallback mode: {str(e)}")
+        return {
+            'full_text': _fallback_text_extraction(image_path),
+            'confidence_data': [],
+            'average_confidence': 0,
+            'total_words': 0,
+            'fallback_mode': True
+        }
 
 
 def batch_ocr_images(image_dir: str, output_dir: str) -> dict:

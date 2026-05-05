@@ -369,6 +369,15 @@ class ExcelExporter:
             output_path (str): Path to output Excel file
         """
         
+        if not self._has_openpyxl:
+            # Fallback to CSV
+            self._export_to_csv(extracted_data, classifications, matching_data, output_path)
+            return
+        
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
+        
         wb = openpyxl.Workbook()
         wb.remove(wb.active)  # Remove default sheet
         
@@ -491,13 +500,22 @@ class ExcelExporter:
     
     def export_hybrid_matching_results(self, matching_results: dict, output_path: str):
         """
-        Export hybrid pattern-semantic matching results to Excel.
+        Export hybrid pattern-semantic matching results to Excel or CSV.
         Includes detailed layer-by-layer analysis with numeric scores.
         
         Args:
             matching_results (dict): Results from HybridMatchingEngine
             output_path (str): Path to output Excel file
         """
+        
+        if not self._has_openpyxl:
+            # Fallback to CSV
+            self._export_matching_to_csv(matching_results, output_path)
+            return
+        
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+        from openpyxl.utils import get_column_letter
         
         wb = openpyxl.Workbook()
         
