@@ -83,6 +83,36 @@ def index():
                 }
                 for file_path in result.get("output_files", [])
             ]
+            
+            # Prepare detailed extraction results for display
+            extraction_details = []
+            if result.get("extracted_fields"):
+                for doc_name, fields in result["extracted_fields"].items():
+                    doc_extraction = {"name": doc_name, "fields": []}
+                    if isinstance(fields, dict):
+                        for field_name, field_data in fields.items():
+                            if isinstance(field_data, dict) and field_data.get('confidence', 0) > 0:
+                                doc_extraction["fields"].append({
+                                    "name": field_name.replace('_', ' ').title(),
+                                    "value": field_data.get(list(field_data.keys())[0]),
+                                    "confidence": field_data.get("confidence", 0)
+                                })
+                    if doc_extraction["fields"]:
+                        extraction_details.append(doc_extraction)
+            result["extraction_details"] = extraction_details
+            
+            # Prepare classification details for display
+            classification_details = []
+            if result.get("classifications"):
+                for doc_name, classification in result["classifications"].items():
+                    if isinstance(classification, dict) and classification.get("confidence", 0) > 0:
+                        classification_details.append({
+                            "name": doc_name,
+                            "type": classification.get("document_type", "Unknown"),
+                            "confidence": classification.get("confidence", 0),
+                            "explanation": classification.get("explanation", "")
+                        })
+            result["classification_details"] = classification_details
 
             cleanup_previous_runs()
 

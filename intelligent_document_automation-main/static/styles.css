@@ -258,3 +258,124 @@ button {
     max-width: none;
   }
 }
+
+/* Details Section Styling */
+.details-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.details-section h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.detail-card {
+  background: linear-gradient(135deg, rgba(98, 210, 162, 0.08), rgba(124, 185, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  transition: all 0.2s ease;
+}
+
+.detail-card:hover {
+  background: linear-gradient(135deg, rgba(98, 210, 162, 0.12), rgba(124, 185, 255, 0.12));
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.detail-header strong {
+  color: var(--accent);
+  font-size: 14px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.confidence-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background-color: rgba(98, 210, 162, 0.2);
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.detail-type {
+  margin: 4px 0;
+  font-size: 13px;
+  color: var(--accent-2);
+  font-weight: 500;
+}
+
+.detail-explanation {
+  margin: 6px 0 0 0;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.field-list {
+  list-style: none;
+  margin: 8px 0 0 0;
+  padding: 0;
+  font-size: 12px;
+}
+
+.field-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 4px;
+}
+
+.field-list li:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.field-name {
+  font-weight: 500;
+  color: var(--text);
+  flex: 0 0 auto;
+}
+
+.field-value {
+  flex: 1;
+  text-align: right;
+  color: var(--accent);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 120px;
+}
+
+.field-confidence {
+  font-size: 11px;
+  color: var(--muted);
+  flex: 0 0 auto;
+}

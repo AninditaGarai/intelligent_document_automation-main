@@ -70,6 +70,50 @@
             <div class="metric"><span>Pairs</span><strong>{{ result.summary.document_pairs_matched }}</strong></div>
           </div>
 
+          {% if result.classification_details %}
+          <div class="details-section">
+            <h3>Document Classification</h3>
+            <div class="details-grid">
+              {% for doc_class in result.classification_details %}
+              <div class="detail-card">
+                <div class="detail-header">
+                  <strong>{{ doc_class.name }}</strong>
+                  <span class="confidence-badge" style="background-color: {% if doc_class.confidence >= 80 %}#27ae60{% elif doc_class.confidence >= 60 %}#f39c12{% else %}#e74c3c{% endif %};">
+                    {{ doc_class.confidence }}%
+                  </span>
+                </div>
+                <p class="detail-type">{{ doc_class.type }}</p>
+                <p class="detail-explanation">{{ doc_class.explanation }}</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
+          {% if result.extraction_details %}
+          <div class="details-section">
+            <h3>Extracted Fields</h3>
+            <div class="details-grid">
+              {% for doc_extract in result.extraction_details %}
+              <div class="detail-card">
+                <div class="detail-header">
+                  <strong>{{ doc_extract.name }}</strong>
+                </div>
+                <ul class="field-list">
+                  {% for field in doc_extract.fields %}
+                  <li>
+                    <span class="field-name">{{ field.name }}</span>
+                    <span class="field-value">{{ field.value }}</span>
+                    <span class="field-confidence">{{ field.confidence }}%</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+
           <div class="file-list">
             <h3>Output files</h3>
             {% for item in result.output_items %}
