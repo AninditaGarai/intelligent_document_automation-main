@@ -10,6 +10,8 @@ from flask import Flask, render_template, request, send_from_directory, url_for
 from werkzeug.utils import secure_filename
 
 from src.pipeline import run_pipeline
+from src.api import api
+from src.logger_config import setup_logging
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -19,6 +21,12 @@ ALLOWED_EXTENSIONS = {".pdf"}
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
 app.config["SECRET_KEY"] = "document-automation-demo"
+
+# Register API blueprint
+app.register_blueprint(api)
+
+# Setup logging
+setup_logging()
 
 
 def allowed_file(filename: str) -> bool:
