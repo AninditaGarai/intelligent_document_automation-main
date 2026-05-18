@@ -10,6 +10,9 @@ import sys
 from pathlib import Path
 from subprocess import TimeoutExpired
 import threading
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def _require_pytesseract():
@@ -88,16 +91,16 @@ def extract_text_from_image(image_path: str) -> str:
         text = _ocr_with_timeout(image_path, timeout_sec=10)
         
         if text and "[Cannot extract" not in text and "[OCR not available" not in text:
-            print(f"  Extracted {len(text)} characters\n")
+            logger.debug(f"Extracted {len(text)} characters")
         else:
-            print(f"  Fallback mode: Using placeholder text\n")
+            logger.debug(f"Fallback mode: Using placeholder text")
         
         return text
         
     except FileNotFoundError:
         raise
     except Exception as e:
-        print(f"  Error: {str(e)} - using fallback\n")
+        logger.warning(f"Error in OCR: {str(e)} - using fallback", exc_info=True)
         return _fallback_text_extraction(image_path)
 
 
@@ -222,7 +225,7 @@ def batch_ocr_images(image_dir: str, output_dir: str) -> dict:
             text_output[image_file] = extracted_text
             
         except Exception as e:
-            print(f"Failed to OCR {image_file}: {str(e)}")
+            logger.error(f"Failed to OCR {image_file}: {str(e)}", exc_info=True)
             continue
     
     print()

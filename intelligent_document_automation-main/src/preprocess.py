@@ -11,6 +11,9 @@ Prepares scanned images for OCR by:
 
 import os
 from pathlib import Path
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 def _require_cv2():
@@ -96,7 +99,7 @@ def preprocess_image(image_path: str, output_path: str = None) -> 'np.ndarray':
         return morph
         
     except Exception as e:
-        print(f"Error preprocessing image: {str(e)}")
+        logger.error(f"Error preprocessing image: {str(e)}", exc_info=True)
         raise
 
 
@@ -140,7 +143,7 @@ def batch_preprocess_images(input_dir: str, output_dir: str) -> dict:
             preprocess_image(input_path, output_path)
             preprocessed_map[image_file] = output_path
         except Exception as e:
-            print(f"Failed to preprocess {image_file}: {str(e)}")
+            logger.error(f"Failed to preprocess {image_file}: {str(e)}", exc_info=True)
             continue
     
     print()

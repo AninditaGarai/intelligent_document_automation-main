@@ -6,6 +6,9 @@ Supports: Quotation, Statement of Work (SOW), and Contract documents.
 """
 
 import re
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class DocumentClassifier:
@@ -179,13 +182,10 @@ def classify_documents(text_dict: dict) -> dict:
             classification = classifier.classify(text)
             classifications[doc_name] = classification
             
-            print(f"{doc_name}:")
-            print(f"  Type: {classification['document_type']}")
-            print(f"  Confidence: {classification['confidence']}%")
-            print(f"  Keywords found: {', '.join(classification['found_keywords'])}\n")
+            logger.info(f"{doc_name}: Type={classification['document_type']}, Confidence={classification['confidence']}%")
             
         except Exception as e:
-            print(f"Error classifying {doc_name}: {str(e)}\n")
+            logger.error(f"Error classifying {doc_name}: {str(e)}", exc_info=True)
             classifications[doc_name] = {
                 'document_type': 'Error',
                 'confidence': 0,

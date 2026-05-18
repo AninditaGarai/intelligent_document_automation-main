@@ -7,6 +7,9 @@ Each page in a PDF is converted to a separate image file.
 
 import os
 from pathlib import Path
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 # Poppler path: allow override via environment variable `POPPLER_PATH`.
 # Keep None as default so pdf2image will try to use PATH when available.
@@ -43,7 +46,7 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str) -> list:
         # Lazy import to avoid hard failure when optional dependency is missing
         try:
             from pdf2image import convert_from_path
-        except Exception as ie:
+        except ImportError as ie:
             raise ImportError(
                 "Missing dependency: pdf2image. Install it with 'pip install pdf2image' "
                 "and ensure Poppler is installed and its bin is on PATH or set POPPLER_PATH env var."
@@ -111,7 +114,7 @@ def batch_convert_pdfs(pdf_dir: str, output_dir: str) -> dict:
             image_paths = convert_pdf_to_images(pdf_path, output_dir)
             pdf_to_images_map[pdf_file] = image_paths
         except Exception as e:
-            print(f"Failed to convert {pdf_file}: {str(e)}")
+            logger.error(f"Failed to convert {pdf_file}: {str(e)}", exc_info=True)
             continue
     
     return pdf_to_images_map

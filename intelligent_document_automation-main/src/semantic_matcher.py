@@ -226,8 +226,11 @@ class HybridMatchingEngine:
             return False, "One or both currency values missing"
         
         # Normalize currencies using rule mappings
-        norm1 = self.currency_rules.get(str(curr1).lower(), str(curr1).upper())
-        norm2 = self.currency_rules.get(str(curr2).lower(), str(curr2).upper())
+        norm1 = self.currency_rules.get(str(curr1).lower(), str(curr1).upper()) if curr1 else None
+        norm2 = self.currency_rules.get(str(curr2).lower(), str(curr2).upper()) if curr2 else None
+        
+        if not norm1 or not norm2:
+            return False, "Currency normalization failed - None values"
         
         match = norm1.upper() == norm2.upper()
         explanation = f"Currency rule match: '{curr1}' → {norm1} vs '{curr2}' → {norm2} = {match}"
