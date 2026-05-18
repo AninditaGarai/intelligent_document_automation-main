@@ -16,7 +16,8 @@ def _try_import_openpyxl():
         from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
         from openpyxl.utils import get_column_letter
         return openpyxl, Font, PatternFill, Alignment, Border, Side, get_column_letter
-    except Exception:
+    except Exception as e:
+        logger.error(f"Failed to import openpyxl: {str(e)}")
         return None, None, None, None, None, None, None
 
 

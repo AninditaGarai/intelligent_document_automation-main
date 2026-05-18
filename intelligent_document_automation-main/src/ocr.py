@@ -146,7 +146,8 @@ def extract_text_with_confidence(image_path: str) -> dict:
                     confidence_data.append({'word': word, 'confidence': conf})
             
             avg_confidence = sum(d['confidence'] for d in confidence_data) / len(confidence_data) if confidence_data else 0
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to extract confidence data: {str(e)}")
             confidence_data = []
             avg_confidence = 0
         

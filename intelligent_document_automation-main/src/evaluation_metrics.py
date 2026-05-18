@@ -217,7 +217,8 @@ class GroundTruthManager:
                     with open(gt_file, 'r') as f:
                         self.ground_truth = json.load(f)
                     return
-                except:
+                except Exception as e:
+                    logger.warning(f"Failed to load ground truth file {gt_file}: {str(e)}")
                     pass
         
         # Use internal sample evaluation dataset (deterministic)
