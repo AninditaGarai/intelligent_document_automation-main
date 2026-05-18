@@ -91,12 +91,16 @@ def index():
                     doc_extraction = {"name": doc_name, "fields": []}
                     if isinstance(fields, dict):
                         for field_name, field_data in fields.items():
-                            if isinstance(field_data, dict) and field_data.get('confidence', 0) > 0:
-                                doc_extraction["fields"].append({
-                                    "name": field_name.replace('_', ' ').title(),
-                                    "value": field_data.get(list(field_data.keys())[0]),
-                                    "confidence": field_data.get("confidence", 0)
-                                })
+                            if isinstance(field_data, dict) and len(field_data) > 0 and field_data.get('confidence', 0) > 0:
+                                # Safe dict access: get first key safely
+                                first_key = list(field_data.keys())[0]
+                                field_value = field_data.get(first_key)
+                                if field_value is not None:
+                                    doc_extraction["fields"].append({
+                                        "name": field_name.replace('_', ' ').title(),
+                                        "value": field_value,
+                                        "confidence": field_data.get("confidence", 0)
+                                    })
                     if doc_extraction["fields"]:
                         extraction_details.append(doc_extraction)
             result["extraction_details"] = extraction_details
@@ -126,6 +130,11 @@ def index():
 
 @app.route("/download/<run_id>/<path:filename>")
 def download_file(run_id: str, filename: str):
+    # Validate and sanitize filename to prevent path traversal attacks
+    filename = secure_filename(filename)
+    if not filename:
+        return {"error": "Invalid filename"}, 400
+    
     run_dir = RUNS_DIR / run_id / "output"
     return send_from_directory(run_dir, filename, as_attachment=True)
 

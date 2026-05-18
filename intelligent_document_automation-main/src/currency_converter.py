@@ -196,7 +196,7 @@ class CurrencyConverter:
                     return rate, source, True
         
         except (urllib.error.URLError, urllib.error.HTTPError, json.JSONDecodeError, 
-                timeout, Exception) as e:
+                TimeoutError, Exception) as e:
             # API failed, use fallback
             logger.warning(f"Currency conversion API failed for {currency_code}: {str(e)}. Using fallback rate.")
             pass

@@ -7,6 +7,19 @@ import logging.handlers
 from pathlib import Path
 
 
+def get_logger(name: str) -> logging.Logger:
+    """
+    Get a logger instance for a module.
+    
+    Args:
+        name: Logger name (typically __name__)
+        
+    Returns:
+        logging.Logger: Configured logger instance
+    """
+    return logging.getLogger(name)
+
+
 def setup_logging(log_dir: str = "logs", log_level: str = "INFO") -> None:
     """
     Configure logging with both file and console handlers.

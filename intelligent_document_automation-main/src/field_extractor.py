@@ -6,6 +6,9 @@ Fields: Client Name, Billing Address, Organization Name, Currency
 """
 
 import re
+from logger_config import get_logger
+
+logger = get_logger(__name__)
 
 
 class FieldExtractor:
@@ -309,20 +312,35 @@ def extract_fields_from_documents(text_dict: dict) -> dict:
     results = {}
     
     for doc_name, text in text_dict.items():
+        # Validate input: must be string and non-empty
+        if not isinstance(text, str) or not text.strip():
+            logger.warning(f"Skipping {doc_name}: text is not a valid string or is empty")
+            results[doc_name] = {
+                'client_name': {'name': None, 'confidence': 0, 'explanation': 'Invalid or empty text'},
+                'organization_name': {'organization': None, 'confidence': 0, 'explanation': 'Invalid or empty text'},
+                'currency': {'currency': None, 'confidence': 0, 'explanation': 'Invalid or empty text'},
+                'billing_address': {'address': None, 'confidence': 0, 'explanation': 'Invalid or empty text'}
+            }
+            continue
+        
         try:
             fields = extractor.extract_all_fields(text)
             results[doc_name] = fields
             
-            print(f"Extracted fields from {doc_name}:")
+            logger.info(f"Extracted fields from {doc_name}")
             for field_name, field_data in fields.items():
-                if field_data[list(field_data.keys())[0]]:  # If field has a value
-                    print(f"  {field_name}: {list(field_data.values())[0]}")
+                # Safe dict access: check if field_data is dict and has keys
+                if field_data and isinstance(field_data, dict) and len(field_data) > 0:
+                    first_key = list(field_data.keys())[0]
+                    if field_data[first_key]:
+                        logger.debug(f"  {field_name}: {field_data[first_key]}")
+                    else:
+                        logger.debug(f"  {field_name}: Not found")
                 else:
-                    print(f"  {field_name}: Not found")
-            print()
+                    logger.debug(f"  {field_name}: Invalid field data")
             
         except Exception as e:
-            print(f"Error extracting fields from {doc_name}: {str(e)}\n")
+            logger.error(f"Error extracting fields from {doc_name}: {str(e)}", exc_info=True)
             results[doc_name] = {
                 'client_name': {'name': None, 'confidence': 0, 'explanation': str(e)},
                 'organization_name': {'organization': None, 'confidence': 0, 'explanation': str(e)},

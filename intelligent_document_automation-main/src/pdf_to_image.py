@@ -53,11 +53,16 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str) -> list:
             ) from ie
 
         # Convert PDF to images with DPI 200 for better OCR accuracy
-        print(f"Converting PDF: {pdf_path}")
+        logger.debug(f"Converting PDF: {pdf_path}")
         if POPPLER_PATH:
             images = convert_from_path(pdf_path, dpi=200, poppler_path=POPPLER_PATH)
         else:
             images = convert_from_path(pdf_path, dpi=200)
+        
+        # Validate that PDF has pages
+        if not images:
+            logger.error(f"PDF has no pages: {pdf_path}")
+            raise ValueError(f"PDF file has no pages: {pdf_path}")
         
         image_paths = []
         
@@ -71,9 +76,9 @@ def convert_pdf_to_images(pdf_path: str, output_dir: str) -> list:
             image.save(output_path, "PNG")
             image_paths.append(output_path)
             
-            print(f"  Saved: {output_filename}")
+            logger.debug(f"  Saved: {output_filename}")
         
-        print(f"Conversion complete: {len(image_paths)} pages converted\n")
+        logger.info(f"Conversion complete: {len(image_paths)} pages converted")
         return image_paths
         
     except Exception as e:
