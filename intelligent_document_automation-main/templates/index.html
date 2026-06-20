@@ -8,6 +8,7 @@
 </head>
 <body>
   <div class="page-shell">
+    <div class="toast-container" id="toastContainer"></div>
     <header class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Hybrid Pattern-Semantic Verification</p>
@@ -41,6 +42,12 @@
             <small class="file-count" id="fileCount"></small>
           </label>
           <button type="submit" id="submitBtn">Run pipeline</button>
+          <div id="progressContainer" class="progress-container" style="display: none;">
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+            </div>
+            <div class="progress-text" id="progressText">Processing documents...</div>
+          </div>
         </form>
         {% if error %}
         <div class="alert error">{{ error }}</div>
@@ -200,9 +207,61 @@
     uploadForm.addEventListener('submit', function(e) {
       if (fileInput.files.length === 0) {
         e.preventDefault();
-        alert('Please select at least one PDF file.');
+        showToast('error', 'Please select at least one PDF file.');
+        return;
       }
+      
+      // Show loading state
+      const submitBtn = document.getElementById('submitBtn');
+      const progressContainer = document.getElementById('progressContainer');
+      const progressFill = document.getElementById('progressFill');
+      const progressText = document.getElementById('progressText');
+      
+      submitBtn.disabled = true;
+      submitBtn.classList.add('loading');
+      submitBtn.textContent = 'Processing...';
+      progressContainer.style.display = 'block';
+      
+      // Simulate progress
+      let progress = 0;
+      const progressInterval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress > 90) progress = 90;
+        progressFill.style.width = progress + '%';
+        progressText.textContent = `Processing documents... ${Math.round(progress)}%`;
+      }, 500);
+      
+      // Store interval ID to clear it later
+      window.progressInterval = progressInterval;
     });
+    
+    // Toast notification function
+    function showToast(type, message, duration = 4000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease forwards';
+        setTimeout(() => {
+          if (container.contains(toast)) {
+            container.removeChild(toast);
+          }
+        }, 300);
+      }, duration);
+    }
+    
+    // Reset form state after page load if there was a successful upload
+    {% if result and result.status == 'ok' %}
+    showToast('success', 'Documents processed successfully!');
+    {% endif %}
+    
+    {% if error %}
+    showToast('error', '{{ error }}');
+    {% endif %}
   </script>
 </body>
 </html>
