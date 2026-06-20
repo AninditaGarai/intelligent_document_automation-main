@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+input_pdfs/*
+output/*
+logs/*
+web_runs/*
+extracted_text/*
+images/*
+!input_pdfs/.gitkeep
+!output/.gitkeep
+!logs/.gitkeep
+!web_runs/.gitkeep
+!extracted_text/.gitkeep
+!images/.gitkeep
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+!README.md
