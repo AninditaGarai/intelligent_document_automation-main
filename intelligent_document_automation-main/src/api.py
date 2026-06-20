@@ -1,11 +1,18 @@
 """
 REST API layer for the document processing pipeline.
 
-Provides endpoints for:
-- Submitting PDF batches for processing
-- Polling job status
-- Retrieving results
-- Health checks
+This module provides a RESTful API for document processing operations.
+
+Endpoints:
+- GET  /api/v1/health - Health check endpoint
+- POST /api/v1/submit - Submit PDF files for processing
+- GET  /api/v1/jobs/<job_id>/status - Get job status
+- POST /api/v1/jobs/<job_id>/process - Trigger job processing
+- GET  /api/v1/jobs/<job_id>/results - Get job results
+- GET  /api/v1/jobs - List all jobs
+
+Authentication: None (public API)
+Rate Limiting: Not implemented (add for production)
 """
 
 from __future__ import annotations
@@ -33,7 +40,18 @@ JOBS_LOCK = threading.Lock()  # Thread-safe access to JOBS dict
 
 @api.route("/health", methods=["GET"])
 def health():
-    """Health check endpoint."""
+    """
+    Health check endpoint.
+    
+    Returns:
+        JSON response with service status and version
+        
+    Response:
+        {
+            "status": "ok",
+            "version": "1.0.0"
+        }
+    """
     return jsonify({"status": "ok", "version": "1.0.0"})
 
 
@@ -42,7 +60,22 @@ def submit_job():
     """
     Submit a batch of PDF files for processing.
     
-    Returns: job_id for polling status
+    Request:
+        multipart/form-data with 'files' field containing PDF files
+        
+    Returns:
+        JSON response with job_id for polling status
+        
+    Response:
+        {
+            "job_id": "string",
+            "files_received": int
+        }
+        
+    Error Response:
+        {
+            "error": "string"
+        }
     """
     files = request.files.getlist("files")
     
@@ -90,7 +123,27 @@ def submit_job():
 
 @api.route("/jobs/<job_id>/status", methods=["GET"])
 def get_status(job_id: str):
-    """Get the status of a submitted job."""
+    """
+    Get the status of a submitted job.
+    
+    Args:
+        job_id: Unique identifier for the job
+        
+    Returns:
+        JSON response with job status information
+        
+    Response:
+        {
+            "job_id": "string",
+            "status": "submitted|processing|completed|failed",
+            "files": ["string"]
+        }
+        
+    Error Response:
+        {
+            "error": "Job not found"
+        }
+    """
     with JOBS_LOCK:
         if job_id not in JOBS:
             return jsonify({"error": "Job not found"}), 404
@@ -107,7 +160,33 @@ def get_status(job_id: str):
 
 @api.route("/jobs/<job_id>/process", methods=["POST"])
 def process_job(job_id: str):
-    """Trigger processing for a submitted job."""
+    """
+    Trigger processing for a submitted job.
+    
+    Args:
+        job_id: Unique identifier for the job
+        
+    Returns:
+        JSON response with processing results
+        
+    Response:
+        {
+            "job_id": "string",
+            "status": "completed|failed",
+            "summary": {
+                "documents_processed": int,
+                "document_types_identified": int,
+                "fields_extracted": int,
+                "document_pairs_matched": int
+            },
+            "output_files": ["string"]
+        }
+        
+    Error Response:
+        {
+            "error": "string"
+        }
+    """
     with JOBS_LOCK:
         if job_id not in JOBS:
             return jsonify({"error": "Job not found"}), 404
@@ -142,7 +221,32 @@ def process_job(job_id: str):
 
 @api.route("/jobs/<job_id>/results", methods=["GET"])
 def get_results(job_id: str):
-    """Get processing results for a completed job."""
+    """
+    Get processing results for a completed job.
+    
+    Args:
+        job_id: Unique identifier for the job
+        
+    Returns:
+        JSON response with detailed processing results
+        
+    Response:
+        {
+            "job_id": "string",
+            "summary": {
+                "documents_processed": int,
+                "document_types_identified": int,
+                "fields_extracted": int,
+                "document_pairs_matched": int
+            },
+            "output_files": ["string"]
+        }
+        
+    Error Response:
+        {
+            "error": "string"
+        }
+    """
     with JOBS_LOCK:
         if job_id not in JOBS:
             return jsonify({"error": "Job not found"}), 404
@@ -163,7 +267,24 @@ def get_results(job_id: str):
 
 @api.route("/jobs", methods=["GET"])
 def list_jobs():
-    """List all jobs and their statuses."""
+    """
+    List all jobs and their statuses.
+    
+    Returns:
+        JSON response with list of all jobs
+        
+    Response:
+        {
+            "jobs": [
+                {
+                    "job_id": "string",
+                    "status": "submitted|processing|completed|failed",
+                    "files": int
+                }
+            ],
+            "total": int
+        }
+    """
     jobs_list = [
         {"job_id": jid, "status": job["status"], "files": len(job["files"])}
         for jid, job in JOBS.items()
