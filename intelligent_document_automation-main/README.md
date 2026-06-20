@@ -1,3 +1,8 @@
+![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
+![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)
+![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Status](https://img.shields.io/badge/Status-Production-success.svg)
+
 # Intelligent Document Automation with Hybrid Pattern-Semantic Explainable Verification
 
 ## Academic Final-Year Project
