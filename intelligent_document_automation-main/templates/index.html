@@ -48,6 +48,12 @@
             <span>Drop PDFs here or browse to select files</span>
             <small>Multiple files are supported.</small>
             <small class="file-count" id="fileCount"></small>
+            <div class="upload-progress" id="uploadProgress" style="display: none;">
+              <div class="upload-progress-bar">
+                <div class="upload-progress-fill" id="uploadProgressFill"></div>
+              </div>
+              <div class="upload-progress-text" id="uploadProgressText">Uploading...</div>
+            </div>
           </label>
           <button type="submit" id="submitBtn">Run pipeline</button>
           <div id="progressContainer" class="progress-container" style="display: none;">
@@ -224,13 +230,31 @@
       const progressContainer = document.getElementById('progressContainer');
       const progressFill = document.getElementById('progressFill');
       const progressText = document.getElementById('progressText');
+      const uploadProgress = document.getElementById('uploadProgress');
+      const uploadProgressFill = document.getElementById('uploadProgressFill');
+      const uploadProgressText = document.getElementById('uploadProgressText');
       
       submitBtn.disabled = true;
       submitBtn.classList.add('loading');
       submitBtn.textContent = 'Processing...';
       progressContainer.style.display = 'block';
+      uploadProgress.style.display = 'block';
       
-      // Simulate progress
+      // Simulate upload progress
+      let uploadProgressValue = 0;
+      const uploadInterval = setInterval(() => {
+        uploadProgressValue += Math.random() * 20;
+        if (uploadProgressValue > 100) uploadProgressValue = 100;
+        uploadProgressFill.style.width = uploadProgressValue + '%';
+        uploadProgressText.textContent = `Uploading files... ${Math.round(uploadProgressValue)}%`;
+        
+        if (uploadProgressValue >= 100) {
+          clearInterval(uploadInterval);
+          uploadProgressText.textContent = 'Upload complete!';
+        }
+      }, 200);
+      
+      // Simulate processing progress
       let progress = 0;
       const progressInterval = setInterval(() => {
         progress += Math.random() * 15;
@@ -239,7 +263,8 @@
         progressText.textContent = `Processing documents... ${Math.round(progress)}%`;
       }, 500);
       
-      // Store interval ID to clear it later
+      // Store interval IDs to clear them later
+      window.uploadInterval = uploadInterval;
       window.progressInterval = progressInterval;
     });
     
