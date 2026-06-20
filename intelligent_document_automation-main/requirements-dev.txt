@@ -1,0 +1,21 @@
+# Development Dependencies for Intelligent Document Automation
+
+# Include base requirements
+-r requirements.txt
+
+# Testing
+pytest==7.4.3
+pytest-cov==4.1.0
+
+# Code Quality
+black==23.12.1
+flake8==6.1.0
+mypy==1.8.0
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# Development Tools
+ipython==8.18.1
+jupyter==1.0.0
