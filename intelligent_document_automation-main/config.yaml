@@ -1,0 +1,67 @@
+# Configuration file for Intelligent Document Automation
+
+# Application Settings
+app:
+  name: "Intelligent Document Automation"
+  version: "1.0.0"
+  debug: false
+
+# Server Settings
+server:
+  host: "127.0.0.1"
+  port: 5000
+  max_content_length: 25  # MB
+
+# File Upload Settings
+upload:
+  allowed_extensions: [".pdf"]
+  max_file_size: 25  # MB
+  max_files_per_upload: 10
+
+# Processing Settings
+processing:
+  ocr:
+    engine: "tesseract"
+    dpi: 200
+    language: "eng"
+  
+  preprocessing:
+    enable_denoising: true
+    enable_contrast_enhancement: true
+    enable_morphological_operations: true
+  
+  classification:
+    enable_auto_classification: true
+    confidence_threshold: 0.6
+
+# Matching Settings
+matching:
+  pattern_score_weight: 0.6
+  semantic_score_weight: 0.4
+  match_decision_threshold: 0.75
+
+# Output Settings
+output:
+  format: "excel"
+  include_color_coding: true
+  include_confidence_scores: true
+
+# Logging Settings
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/app.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# Workspace Settings
+workspace:
+  runs_directory: "web_runs"
+  keep_last_runs: 5
+  cleanup_on_startup: true
+
+# Security Settings
+security:
+  secret_key: "document-automation-demo"
+  enable_cors: false
+  allowed_origins: []
