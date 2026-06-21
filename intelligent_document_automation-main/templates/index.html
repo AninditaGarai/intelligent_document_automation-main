@@ -3,11 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Intelligent Document Automation - Process scanned PDFs with OCR, field extraction, classification, and matching">
   <title>Intelligent Document Automation</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light theme" type="button">
     <svg id="moonIcon" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/>
     </svg>
@@ -16,7 +18,7 @@
     </svg>
   </button>
   <div class="page-shell">
-    <div class="toast-container" id="toastContainer"></div>
+    <div class="toast-container" id="toastContainer" role="alert" aria-live="polite"></div>
     <header class="hero">
       <div class="hero-copy">
         <p class="eyebrow">Hybrid Pattern-Semantic Verification</p>
@@ -39,12 +41,12 @@
       </div>
     </header>
 
-    <main class="content-grid">
+    <main class="content-grid" id="main-content">
       <section class="card upload-card">
         <h2>Upload PDFs</h2>
-        <form method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm">
-          <label class="dropzone" id="dropzone">
-            <input type="file" name="pdf_files" accept="application/pdf" multiple id="fileInput">
+        <form method="post" enctype="multipart/form-data" class="upload-form" id="uploadForm" aria-label="PDF upload form">
+          <label class="dropzone" id="dropzone" for="fileInput">
+            <input type="file" name="pdf_files" accept="application/pdf" multiple id="fileInput" aria-label="Select PDF files to upload">
             <span>Drop PDFs here or browse to select files</span>
             <small>Multiple files are supported.</small>
             <small class="file-count" id="fileCount"></small>
@@ -55,7 +57,7 @@
               <div class="upload-progress-text" id="uploadProgressText">Uploading...</div>
             </div>
           </label>
-          <button type="submit" id="submitBtn">Run pipeline</button>
+          <button type="submit" id="submitBtn" aria-label="Process uploaded PDF files">Run pipeline</button>
           <div id="progressContainer" class="progress-container" style="display: none;">
             <div class="progress-bar">
               <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
