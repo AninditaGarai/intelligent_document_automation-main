@@ -650,9 +650,28 @@ html {
 }
 
 /* Improved Responsive Design */
+@media (max-width: 1024px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .hero-copy {
+    padding: 32px 24px;
+  }
+  
+  .hero-panel {
+    padding: 24px;
+  }
+}
+
 @media (max-width: 768px) {
   .page-shell {
-    padding: 20px 0 32px;
+    padding: 16px 0 24px;
   }
   
   .hero-copy,
@@ -673,8 +692,8 @@ html {
   }
   
   .toast-container {
-    left: 20px;
-    right: 20px;
+    left: 16px;
+    right: 16px;
   }
   
   .toast {
@@ -686,5 +705,65 @@ html {
     right: 16px;
     width: 40px;
     height: 40px;
+  }
+  
+  .upload-form button {
+    width: 100%;
+  }
+  
+  .dropzone {
+    padding: 32px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-shell {
+    padding: 12px 0 20px;
+  }
+  
+  .hero h1 {
+    font-size: 1.75rem;
+  }
+  
+  .hero .lede {
+    font-size: 0.9rem;
+  }
+  
+  .card h2 {
+    font-size: 1.25rem;
+  }
+  
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .stat-label {
+    font-size: 0.75rem;
+  }
+  
+  .stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .toast {
+    padding: 12px 16px;
+    font-size: 0.875rem;
+  }
+  
+  .theme-toggle {
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+  }
+  
+  .theme-toggle svg {
+    width: 18px;
+    height: 18px;
+  }
+  
+  .upload-progress-text,
+  .progress-text {
+    font-size: 0.75rem;
   }
 }
