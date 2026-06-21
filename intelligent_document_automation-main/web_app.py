@@ -48,6 +48,36 @@ validate_request_size(app)
 logger = setup_logging()
 
 
+@app.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint for monitoring and load balancers"""
+    from src.config import get_config
+    config = get_config()
+    
+    health_status = {
+        "status": "healthy",
+        "version": config.APP_VERSION,
+        "service": config.APP_NAME,
+        "checks": {
+            "database": "not_configured",
+            "storage": "available" if config.RUNS_DIR.exists() else "unavailable",
+            "logging": "available"
+        }
+    }
+    
+    # Check if runs directory is writable
+    try:
+        test_file = config.RUNS_DIR / ".health_check"
+        test_file.touch()
+        test_file.unlink()
+        health_status["checks"]["storage"] = "available"
+    except Exception:
+        health_status["checks"]["storage"] = "unavailable"
+        health_status["status"] = "degraded"
+    
+    return jsonify(health_status), 200
+
+
 def allowed_file(filename: str) -> bool:
     return Path(filename).suffix.lower() in ALLOWED_EXTENSIONS
 
