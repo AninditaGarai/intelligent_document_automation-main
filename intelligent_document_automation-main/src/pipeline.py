@@ -11,6 +11,8 @@ import os
 import logging
 from pathlib import Path
 from typing import Any, Dict, Optional, List
+from functools import lru_cache
+import hashlib
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,38 @@ from src.ocr import batch_ocr_images
 from src.pdf_to_image import batch_convert_pdfs
 from src.preprocess import batch_preprocess_images
 from src.semantic_matcher import perform_multi_document_matching
+
+
+def get_file_hash(file_path: Path) -> str:
+    """
+    Calculate MD5 hash of a file for caching purposes.
+    
+    Args:
+        file_path: Path to the file
+        
+    Returns:
+        MD5 hash string
+    """
+    hash_md5 = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hash_md5.update(chunk)
+    return hash_md5.hexdigest()
+
+
+def get_cache_key(file_path: Path, operation: str) -> str:
+    """
+    Generate a cache key for a file and operation.
+    
+    Args:
+        file_path: Path to the file
+        operation: Operation being performed
+        
+    Returns:
+        Cache key string
+    """
+    file_hash = get_file_hash(file_path)
+    return f"{operation}_{file_hash}"
 
 
 def setup_directories(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[str, str]:
@@ -70,6 +104,9 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
     Raises:
         Exception: If critical pipeline steps fail
     """
+    import time
+    start_time = time.time()
+    
     try:
         dirs = setup_directories(base_path, input_pdf_dir=input_pdf_dir)
         input_path = Path(dirs['input_pdfs'])
@@ -87,7 +124,12 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
 
         logger.info(f"Found {len(pdf_files)} PDF files")
 
+        # Step 1: PDF to Image conversion with timing
+        step_start = time.time()
         pdf_to_images = batch_convert_pdfs(dirs['input_pdfs'], dirs['images'])
+        step_time = time.time() - step_start
+        logger.info(f"PDF to images: {len(pdf_to_images)} conversions in {step_time:.2f}s")
+        
         if not pdf_to_images:
             msg = 'No PDFs were successfully converted.'
             logger.error(msg)
@@ -98,9 +140,12 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
                 'output_files': [],
             }
         
-        logger.info(f"PDF to images: {len(pdf_to_images)} conversions")
-
+        # Step 2: Image preprocessing with timing
+        step_start = time.time()
         preprocessed_images = batch_preprocess_images(dirs['images'], dirs['preprocessed'])
+        step_time = time.time() - step_start
+        logger.info(f"Preprocessed images: {len(preprocessed_images)} images in {step_time:.2f}s")
+        
         if not preprocessed_images:
             msg = 'No images were successfully preprocessed.'
             logger.error(msg)
@@ -111,9 +156,12 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
                 'output_files': [],
             }
         
-        logger.info(f"Preprocessed images: {len(preprocessed_images)} images")
-
+        # Step 3: OCR with timing
+        step_start = time.time()
         ocr_results = batch_ocr_images(dirs['preprocessed'], dirs['extracted_text'])
+        step_time = time.time() - step_start
+        logger.info(f"OCR results: {len(ocr_results)} documents in {step_time:.2f}s")
+        
         if not ocr_results:
             msg = 'OCR extraction failed.'
             logger.error(msg)
@@ -124,20 +172,25 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
                 'output_files': [],
             }
         
-        logger.info(f"OCR results: {len(ocr_results)} documents")
-
+        # Step 4: Classification and extraction with timing
+        step_start = time.time()
         classifications = classify_documents(ocr_results)
         extracted_fields = extract_fields_from_documents(ocr_results)
-        
-        logger.info(f"Classifications: {len(classifications)} documents")
+        step_time = time.time() - step_start
+        logger.info(f"Classifications: {len(classifications)} documents in {step_time:.2f}s")
         logger.info(f"Field extraction: {len(extracted_fields)} documents")
 
+        # Step 5: Matching with timing
+        step_start = time.time()
         matching_input = {doc_name: fields for doc_name, fields in extracted_fields.items()}
         matching_results: Dict[str, Any] = {}
         if len(matching_input) >= 2:
             matching_results = perform_multi_document_matching(matching_input)
-            logger.info(f"Document matching: {len(matching_results.get('details', {}))} pairs found")
+            step_time = time.time() - step_start
+            logger.info(f"Document matching: {len(matching_results.get('details', {}))} pairs found in {step_time:.2f}s")
 
+        # Step 6: Export results with timing
+        step_start = time.time()
         exporter = ExcelExporter()
 
         output_files: List[str] = []
@@ -157,6 +210,9 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
             exporter.export_hybrid_matching_results(matching_results, matching_output)
             output_files.append(matching_output)
             logger.info(f"Exported matching results to {matching_output}")
+        
+        step_time = time.time() - step_start
+        logger.info(f"Export completed in {step_time:.2f}s")
 
         # Calculate metrics
         num_documents = len(classifications)
@@ -180,6 +236,9 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
         
         logger.info(f"Pipeline complete: {num_documents} docs, {len(unique_types)} types, {fields_with_values} fields, {pairs_matched} pairs matched")
         
+        total_time = time.time() - start_time
+        logger.info(f"Total pipeline execution time: {total_time:.2f}s")
+        
         return {
             'status': 'ok',
             'message': 'Processing complete',
@@ -197,6 +256,7 @@ def run_pipeline(base_path: str, input_pdf_dir: Optional[str] = None) -> Dict[st
                 'document_types_identified': len(unique_types),
                 'fields_extracted': fields_with_values,
                 'document_pairs_matched': pairs_matched,
+                'total_execution_time_seconds': round(total_time, 2),
             },
         }
     except Exception as e:
