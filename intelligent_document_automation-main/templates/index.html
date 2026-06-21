@@ -217,11 +217,53 @@
       }
     }
 
+    // Client-side form validation
+    function validateForm() {
+      const files = fileInput.files;
+      
+      // Check if files are selected
+      if (files.length === 0) {
+        showToast('error', 'Please select at least one PDF file.');
+        return false;
+      }
+      
+      // Validate file count (max 10 files)
+      if (files.length > 10) {
+        showToast('error', 'Maximum 10 files allowed per upload.');
+        return false;
+      }
+      
+      // Validate each file
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        // Check file type
+        if (file.type !== 'application/pdf') {
+          showToast('error', `File "${file.name}" is not a PDF. Only PDF files are allowed.`);
+          return false;
+        }
+        
+        // Check file size (25MB max)
+        const maxSize = 25 * 1024 * 1024; // 25MB
+        if (file.size > maxSize) {
+          showToast('error', `File "${file.name}" exceeds 25MB limit. Please compress or split the file.`);
+          return false;
+        }
+        
+        // Check if file is empty
+        if (file.size === 0) {
+          showToast('error', `File "${file.name}" is empty. Please select a valid PDF file.`);
+          return false;
+        }
+      }
+      
+      return true;
+    }
+
     // Handle form submission with loading state
     uploadForm.addEventListener('submit', function(e) {
-      if (fileInput.files.length === 0) {
+      if (!validateForm()) {
         e.preventDefault();
-        showToast('error', 'Please select at least one PDF file.');
         return;
       }
       
