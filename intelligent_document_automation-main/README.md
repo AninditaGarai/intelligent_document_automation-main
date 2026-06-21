@@ -64,6 +64,82 @@ A complete end-to-end Python system for processing scanned financial and legal P
 ## System Architecture
 
 ```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Web Interface                            │
+│                    (Flask + HTML/CSS/JS)                         │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Document Processing Pipeline                 │
+├─────────────────────────────────────────────────────────────────┤
+│  1. PDF → Image Conversion (pdf2image)                         │
+│  2. Image Preprocessing (OpenCV)                                │
+│  3. OCR Extraction (Tesseract)                                 │
+│  4. Document Classification (Rule-based)                       │
+│  5. Field Extraction (Pattern matching)                         │
+│  6. Document Matching (Hybrid Pattern-Semantic)                │
+│  7. Excel Export (openpyxl)                                    │
+└─────────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      Output Generation                           │
+│              (Extracted_Fields.xlsx, Classification.xlsx,         │
+│               Hybrid_Matching_Results.xlsx)                      │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Project Structure
+
+```
+intelligent_document_automation-main/
+├── src/                          # Source code
+│   ├── api.py                    # REST API endpoints
+│   ├── config.py                 # Configuration management
+│   ├── logger_config.py          # Logging configuration
+│   ├── middleware/               # Middleware components
+│   │   ├── __init__.py
+│   │   ├── error_handler.py      # Error handling middleware
+│   │   └── security.py           # Security middleware
+│   ├── document_classifier.py    # Document classification
+│   ├── export_excel.py           # Excel export
+│   ├── field_extractor.py        # Field extraction
+│   ├── ocr.py                    # OCR processing
+│   ├── pdf_to_image.py           # PDF to image conversion
+│   ├── preprocess.py             # Image preprocessing
+│   ├── semantic_matcher.py       # Semantic matching
+│   └── pipeline.py               # Pipeline orchestration
+├── templates/                    # HTML templates
+│   └── index.html               # Main web interface
+├── static/                       # Static assets
+│   └── styles.css               # CSS styles
+├── tests/                        # Test files
+│   ├── __init__.py
+│   ├── test_api.py              # API integration tests
+│   ├── test_config.py           # Configuration tests
+│   ├── test_middleware.py       # Middleware tests
+│   └── test_pipeline.py         # Pipeline tests
+├── web_runs/                     # Runtime directory (created at runtime)
+├── web_app.py                    # Flask application entry point
+├── requirements.txt              # Python dependencies
+├── requirements-dev.txt          # Development dependencies
+├── config.yaml                   # Configuration file
+├── .env.example                  # Environment variables template
+├── Dockerfile                    # Docker container definition
+├── docker-compose.yml            # Docker Compose configuration
+├── .github/workflows/            # GitHub Actions CI/CD
+│   └── ci.yml
+├── .gitignore                    # Git ignore rules
+├── CONTRIBUTING.md               # Contribution guidelines
+└── README.md                     # This file
+```
+
+---
+
+## Hybrid Matching Framework
+
+```
                     INTELLIGENT DOCUMENT AUTOMATION PIPELINE
                                     
 Input PDFs
@@ -270,6 +346,118 @@ LAYER 4: Decision Fusion Engine
 ---
 
 ## Setup & Installation
+
+### Prerequisites
+
+- **Python**: 3.9 or higher
+- **Tesseract OCR**: Install for your operating system
+  - **Windows**: Download from [UB Mannheim](https://github.com/UB-Mannheim/tesseract/wiki)
+  - **macOS**: `brew install tesseract`
+  - **Linux**: `sudo apt-get install tesseract-ocr`
+- **Poppler**: Required for PDF processing
+  - **Windows**: Download from [Poppler for Windows](https://github.com/oschwartz10612/poppler-windows)
+  - **macOS**: `brew install poppler`
+  - **Linux**: `sudo apt-get install poppler-utils`
+
+### Installation Steps
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/intelligent-document-automation.git
+   cd intelligent-document-automation
+   ```
+
+2. **Create a virtual environment** (recommended)
+   ```bash
+   python -m venv venv
+   # On Windows
+   venv\Scripts\activate
+   # On macOS/Linux
+   source venv/bin/activate
+   ```
+
+3. **Install Python dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Install development dependencies** (optional, for testing)
+   ```bash
+   pip install -r requirements-dev.txt
+   ```
+
+5. **Configure environment variables** (optional)
+   ```bash
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+6. **Verify installation**
+   ```bash
+   python -c "import flask; import cv2; import pytesseract; print('All dependencies installed successfully')"
+   ```
+
+### Running the Application
+
+#### Option 1: Direct Python Execution
+
+```bash
+python web_app.py
+```
+
+The application will start on `http://127.0.0.1:5000`
+
+#### Option 2: Using Docker
+
+```bash
+# Build the Docker image
+docker build -t intelligent-document-automation .
+
+# Run the container
+docker run -p 5000:5000 -v $(pwd)/web_runs:/app/web_runs intelligent-document-automation
+```
+
+#### Option 3: Using Docker Compose
+
+```bash
+docker-compose up
+```
+
+### Configuration
+
+The application can be configured using:
+
+1. **Environment Variables** (`.env` file)
+2. **YAML Configuration** (`config.yaml`)
+3. **Code Defaults** (in `src/config.py`)
+
+Key configuration options:
+- `APP_NAME`: Application name
+- `HOST`: Server host (default: 127.0.0.1)
+- `PORT`: Server port (default: 5000)
+- `MAX_CONTENT_LENGTH`: Maximum request size (default: 25MB)
+- `MAX_FILES_PER_UPLOAD`: Maximum files per upload (default: 10)
+- `LOG_LEVEL`: Logging level (default: INFO)
+- `DEBUG`: Debug mode (default: false)
+
+### Testing
+
+Run the test suite:
+
+```bash
+# Run all tests
+pytest tests/
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=html
+
+# Run specific test file
+pytest tests/test_config.py
+```
+
+---
+
+## Execution Guide
 
 ### Prerequisites
 
