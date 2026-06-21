@@ -679,6 +679,42 @@ html {
   color: var(--accent);
 }
 
+/* Performance Optimizations */
+/* Hardware acceleration for animations */
+.toast,
+.progress-fill,
+.upload-progress-fill,
+.dropzone,
+.theme-toggle {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Optimize rendering for large content */
+main,
+.card {
+  contain: layout style paint;
+}
+
+/* Reduce paint for static elements */
+header,
+footer {
+  contain: strict;
+}
+
+/* Optimize font loading */
+body {
+  font-display: swap;
+}
+
+/* Improve scroll performance */
+.page-shell {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
 /* Improved Responsive Design */
 @media (max-width: 1024px) {
   .content-grid {
