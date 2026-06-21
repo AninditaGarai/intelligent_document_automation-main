@@ -191,10 +191,29 @@
       dropzone.addEventListener(eventName, unhighlight, false);
     });
 
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    // Highlight drop zone when dragging over
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, unhighlight, false);
+    });
+    
     function highlight(e) {
       dropzone.classList.add('drag-over');
     }
-
+    
     function unhighlight(e) {
       dropzone.classList.remove('drag-over');
     }
@@ -205,8 +224,32 @@
     function handleDrop(e) {
       const dt = e.dataTransfer;
       const files = dt.files;
-      fileInput.files = files;
-      updateFileCount();
+      
+      // Validate dropped files
+      const validFiles = Array.from(files).filter(file => {
+        if (file.type !== 'application/pdf') {
+          showToast('error', `File "${file.name}" is not a PDF. Only PDF files are allowed.`);
+          return false;
+        }
+        if (file.size > 25 * 1024 * 1024) {
+          showToast('error', `File "${file.name}" exceeds 25MB limit.`);
+          return false;
+        }
+        if (file.size === 0) {
+          showToast('error', `File "${file.name}" is empty.`);
+          return false;
+        }
+        return true;
+      });
+      
+      if (validFiles.length > 0) {
+        // Create a new FileList-like object
+        const dataTransfer = new DataTransfer();
+        validFiles.forEach(file => dataTransfer.items.add(file));
+        fileInput.files = dataTransfer.files;
+        updateFileCount();
+        showToast('success', `${validFiles.length} file(s) added successfully.`);
+      }
     }
 
     // Update file count display

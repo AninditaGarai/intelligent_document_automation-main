@@ -667,6 +667,18 @@ html {
   text-align: center;
 }
 
+/* Drag and Drop Visual Feedback */
+.dropzone.drag-over {
+  border-color: var(--accent);
+  background: rgba(59, 130, 246, 0.05);
+  transform: scale(1.02);
+  transition: all 0.2s ease;
+}
+
+.dropzone.drag-over span {
+  color: var(--accent);
+}
+
 /* Improved Responsive Design */
 @media (max-width: 1024px) {
   .content-grid {
