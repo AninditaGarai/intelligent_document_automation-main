@@ -16,6 +16,7 @@ from src.pipeline import run_pipeline
 from src.api import api
 from src.logger_config import setup_logging
 from src.middleware.error_handler import register_error_handlers
+from src.middleware.security import add_security_headers, validate_request_size
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -31,6 +32,12 @@ app.register_blueprint(api)
 
 # Register error handlers
 register_error_handlers(app)
+
+# Add security headers
+add_security_headers(app)
+
+# Validate request size
+validate_request_size(app)
 
 # Setup logging
 logger = setup_logging()
