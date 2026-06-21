@@ -7,7 +7,7 @@ Each page in a PDF is converted to a separate image file.
 
 import os
 from pathlib import Path
-from logger_config import get_logger
+from src.logger_config import get_logger
 
 logger = get_logger(__name__)
 

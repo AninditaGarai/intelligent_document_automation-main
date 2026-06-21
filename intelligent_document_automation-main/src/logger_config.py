@@ -20,13 +20,16 @@ def get_logger(name: str) -> logging.Logger:
     return logging.getLogger(name)
 
 
-def setup_logging(log_dir: str = "logs", log_level: str = "INFO") -> None:
+def setup_logging(log_dir: str = "logs", log_level: str = "INFO") -> logging.Logger:
     """
     Configure logging with both file and console handlers.
     
     Args:
         log_dir: Directory to store log files
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
+        
+    Returns:
+        logging.Logger: Configured logger instance
     """
     log_path = Path(log_dir)
     log_path.mkdir(exist_ok=True)
@@ -63,3 +66,5 @@ def setup_logging(log_dir: str = "logs", log_level: str = "INFO") -> None:
     logging.getLogger("werkzeug").setLevel(logging.WARNING)
     
     logger.info("Logging initialized")
+    
+    return logger

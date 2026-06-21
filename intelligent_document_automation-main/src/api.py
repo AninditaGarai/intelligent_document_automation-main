@@ -187,16 +187,18 @@ def process_job(job_id: str):
             "error": "string"
         }
     """
-    with JOBS_LOCK:
-        if job_id not in JOBS:
-            return jsonify({"error": "Job not found"}), 404
+    try:
+        with JOBS_LOCK:
+            if job_id not in JOBS:
+                return jsonify({"error": "Job not found"}), 404
+            
+            job = JOBS[job_id]
+            if job["status"] != "submitted":
+                return jsonify({"error": "Job already processed or in progress"}), 400
+            
+            job["status"] = "processing"
         
-        job = JOBS[job_id]
-        if job["status"] != "submitted":
-            return jsonify({"error": "Job already processed or in progress"}), 400
-        
-        job["status"] = "processing"
-        result = run_pipeline(workspace_dir)
+        result = run_pipeline(str(workspace_dir))
         
         with JOBS_LOCK:
             job["status"] = "completed" if result["status"] == "ok" else "failed"

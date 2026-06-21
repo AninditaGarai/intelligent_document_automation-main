@@ -15,6 +15,7 @@ from werkzeug.utils import secure_filename
 from src.pipeline import run_pipeline
 from src.api import api
 from src.logger_config import setup_logging
+from src.middleware.error_handler import register_error_handlers
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -27,6 +28,9 @@ app.config["SECRET_KEY"] = "document-automation-demo"
 
 # Register API blueprint
 app.register_blueprint(api)
+
+# Register error handlers
+register_error_handlers(app)
 
 # Setup logging
 logger = setup_logging()
@@ -226,4 +230,5 @@ if __name__ == "__main__":
         app.run(host="127.0.0.1", port=5000, debug=False)
     except Exception as e:
         logger.error(f"Failed to start application: {e}\n{traceback.format_exc()}")
+        raise
         raise
