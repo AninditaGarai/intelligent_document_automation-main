@@ -17,15 +17,20 @@ from src.api import api
 from src.logger_config import setup_logging
 from src.middleware.error_handler import register_error_handlers
 from src.middleware.security import add_security_headers, validate_request_size
+from src.config import get_config
 
 
-BASE_DIR = Path(__file__).resolve().parent
-RUNS_DIR = BASE_DIR / "web_runs"
+# Load configuration
+config = get_config()
+
+BASE_DIR = config.BASE_DIR
+RUNS_DIR = config.RUNS_DIR
 ALLOWED_EXTENSIONS = {".pdf"}
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 25 * 1024 * 1024
-app.config["SECRET_KEY"] = "document-automation-demo"
+app.config["MAX_CONTENT_LENGTH"] = config.MAX_CONTENT_LENGTH
+app.config["SECRET_KEY"] = config.SECRET_KEY
+app.config["DEBUG"] = config.DEBUG
 
 # Register API blueprint
 app.register_blueprint(api)
