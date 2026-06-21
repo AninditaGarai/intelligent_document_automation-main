@@ -21,6 +21,7 @@ import json
 import logging
 import threading
 import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
@@ -38,6 +39,36 @@ JOBS: Dict[str, Dict[str, Any]] = {}
 JOBS_LOCK = threading.Lock()  # Thread-safe access to JOBS dict
 
 
+def create_response(success: bool, data: Any = None, message: str = None, 
+                    status_code: int = 200, error_code: str = None) -> tuple:
+    """
+    Create a consistent API response format.
+    
+    Args:
+        success: Whether the request was successful
+        data: Response data
+        message: Response message
+        status_code: HTTP status code
+        error_code: Error code for failures
+        
+    Returns:
+        Tuple of (json_response, status_code)
+    """
+    response = {
+        "success": success,
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "data": data if data is not None else {}
+    }
+    
+    if message:
+        response["message"] = message
+    
+    if not success and error_code:
+        response["error_code"] = error_code
+    
+    return jsonify(response), status_code
+
+
 @api.route("/health", methods=["GET"])
 def health():
     """
@@ -48,11 +79,19 @@ def health():
         
     Response:
         {
-            "status": "ok",
-            "version": "1.0.0"
+            "success": true,
+            "timestamp": "ISO-8601 timestamp",
+            "data": {
+                "status": "ok",
+                "version": "1.0.0"
+            }
         }
     """
-    return jsonify({"status": "ok", "version": "1.0.0"})
+    return create_response(
+        success=True,
+        data={"status": "ok", "version": "1.0.0"},
+        message="Service is healthy"
+    )
 
 
 @api.route("/submit", methods=["POST"])
@@ -68,19 +107,32 @@ def submit_job():
         
     Response:
         {
-            "job_id": "string",
-            "files_received": int
+            "success": true,
+            "timestamp": "ISO-8601 timestamp",
+            "data": {
+                "job_id": "string",
+                "files_received": int
+            },
+            "message": "Job submitted successfully"
         }
         
     Error Response:
         {
-            "error": "string"
+            "success": false,
+            "timestamp": "ISO-8601 timestamp",
+            "message": "Error message",
+            "error_code": "NO_FILES"
         }
     """
     files = request.files.getlist("files")
     
     if not files:
-        return jsonify({"error": "No files provided"}), 400
+        return create_response(
+            success=False,
+            message="No files provided",
+            status_code=400,
+            error_code="NO_FILES"
+        )
     
     job_id = str(uuid.uuid4())[:12]
     workspace_dir = Path("api_runs") / job_id
@@ -118,7 +170,12 @@ def submit_job():
     
     logger.info(f"Job {job_id} submitted with {len(filenames)} files")
     
-    return jsonify({"job_id": job_id, "files_received": len(filenames)}), 202
+    return create_response(
+        success=True,
+        data={"job_id": job_id, "files_received": len(filenames)},
+        message="Job submitted successfully",
+        status_code=202
+    )
 
 
 @api.route("/jobs/<job_id>/status", methods=["GET"])
@@ -134,19 +191,31 @@ def get_status(job_id: str):
         
     Response:
         {
-            "job_id": "string",
-            "status": "submitted|processing|completed|failed",
-            "files": ["string"]
+            "success": true,
+            "timestamp": "ISO-8601 timestamp",
+            "data": {
+                "job_id": "string",
+                "status": "submitted|processing|completed|failed",
+                "files": ["string"]
+            }
         }
         
     Error Response:
         {
-            "error": "Job not found"
+            "success": false,
+            "timestamp": "ISO-8601 timestamp",
+            "message": "Job not found",
+            "error_code": "JOB_NOT_FOUND"
         }
     """
     with JOBS_LOCK:
         if job_id not in JOBS:
-            return jsonify({"error": "Job not found"}), 404
+            return create_response(
+                success=False,
+                message="Job not found",
+                status_code=404,
+                error_code="JOB_NOT_FOUND"
+            )
         
         job = JOBS[job_id]
         status_data = {
@@ -155,7 +224,7 @@ def get_status(job_id: str):
             "files": job["files"],
         }
     
-    return jsonify(status_data)
+    return create_response(success=True, data=status_data)
 
 
 @api.route("/jobs/<job_id>/process", methods=["POST"])
@@ -171,30 +240,47 @@ def process_job(job_id: str):
         
     Response:
         {
-            "job_id": "string",
-            "status": "completed|failed",
-            "summary": {
-                "documents_processed": int,
-                "document_types_identified": int,
-                "fields_extracted": int,
-                "document_pairs_matched": int
-            },
-            "output_files": ["string"]
+            "success": true,
+            "timestamp": "ISO-8601 timestamp",
+            "data": {
+                "job_id": "string",
+                "status": "completed|failed",
+                "summary": {
+                    "documents_processed": int,
+                    "document_types_identified": int,
+                    "fields_extracted": int,
+                    "document_pairs_matched": int
+                },
+                "output_files": ["string"]
+            }
         }
         
     Error Response:
         {
-            "error": "string"
+            "success": false,
+            "timestamp": "ISO-8601 timestamp",
+            "message": "Error message",
+            "error_code": "ERROR_CODE"
         }
     """
     try:
         with JOBS_LOCK:
             if job_id not in JOBS:
-                return jsonify({"error": "Job not found"}), 404
+                return create_response(
+                    success=False,
+                    message="Job not found",
+                    status_code=404,
+                    error_code="JOB_NOT_FOUND"
+                )
             
             job = JOBS[job_id]
             if job["status"] != "submitted":
-                return jsonify({"error": "Job already processed or in progress"}), 400
+                return create_response(
+                    success=False,
+                    message="Job already processed or in progress",
+                    status_code=400,
+                    error_code="JOB_ALREADY_PROCESSED"
+                )
             
             job["status"] = "processing"
         
@@ -206,19 +292,27 @@ def process_job(job_id: str):
         
         logger.info(f"Job {job_id} completed with status {result['status']}")
         
-        return jsonify({
-            "job_id": job_id,
-            "status": job["status"],
-            "summary": result.get("summary"),
-            "output_files": [Path(f).name for f in result.get("output_files", [])],
-        }), 200
+        return create_response(
+            success=True,
+            data={
+                "job_id": job_id,
+                "status": job["status"],
+                "summary": result.get("summary"),
+                "output_files": [Path(f).name for f in result.get("output_files", [])],
+            }
+        )
     
     except Exception as e:
         with JOBS_LOCK:
             job["status"] = "failed"
             job["error"] = str(e)
         logger.error(f"Job {job_id} failed: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        return create_response(
+            success=False,
+            message=str(e),
+            status_code=500,
+            error_code="PROCESSING_ERROR"
+        )
 
 
 @api.route("/jobs/<job_id>/results", methods=["GET"])
@@ -234,28 +328,45 @@ def get_results(job_id: str):
         
     Response:
         {
-            "job_id": "string",
-            "summary": {
-                "documents_processed": int,
-                "document_types_identified": int,
-                "fields_extracted": int,
-                "document_pairs_matched": int
-            },
-            "output_files": ["string"]
+            "success": true,
+            "timestamp": "ISO-8601 timestamp",
+            "data": {
+                "job_id": "string",
+                "summary": {
+                    "documents_processed": int,
+                    "document_types_identified": int,
+                    "fields_extracted": int,
+                    "document_pairs_matched": int
+                },
+                "output_files": ["string"]
+            }
         }
         
     Error Response:
         {
-            "error": "string"
+            "success": false,
+            "timestamp": "ISO-8601 timestamp",
+            "message": "Error message",
+            "error_code": "ERROR_CODE"
         }
     """
     with JOBS_LOCK:
         if job_id not in JOBS:
-            return jsonify({"error": "Job not found"}), 404
+            return create_response(
+                success=False,
+                message="Job not found",
+                status_code=404,
+                error_code="JOB_NOT_FOUND"
+            )
         
         job = JOBS[job_id]
         if job["status"] != "completed":
-            return jsonify({"error": f"Job status is {job['status']}, not completed"}), 400
+            return create_response(
+                success=False,
+                message=f"Job status is {job['status']}, not completed",
+                status_code=400,
+                error_code="JOB_NOT_COMPLETED"
+            )
         
         result = job.get("result", {})
         results_data = {
@@ -264,7 +375,7 @@ def get_results(job_id: str):
             "output_files": [Path(f).name for f in result.get("output_files", [])],
         }
     
-    return jsonify(results_data)
+    return create_response(success=True, data=results_data)
 
 
 @api.route("/jobs", methods=["GET"])
@@ -277,18 +388,25 @@ def list_jobs():
         
     Response:
         {
-            "jobs": [
-                {
-                    "job_id": "string",
-                    "status": "submitted|processing|completed|failed",
-                    "files": int
-                }
-            ],
-            "total": int
+            "success": true,
+            "timestamp": "ISO-8601 timestamp",
+            "data": {
+                "jobs": [
+                    {
+                        "job_id": "string",
+                        "status": "submitted|processing|completed|failed",
+                        "files": int
+                    }
+                ],
+                "total": int
+            }
         }
     """
     jobs_list = [
         {"job_id": jid, "status": job["status"], "files": len(job["files"])}
         for jid, job in JOBS.items()
     ]
-    return jsonify({"jobs": jobs_list, "total": len(jobs_list)})
+    return create_response(
+        success=True,
+        data={"jobs": jobs_list, "total": len(jobs_list)}
+    )
