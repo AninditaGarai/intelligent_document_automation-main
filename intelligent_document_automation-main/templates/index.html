@@ -284,10 +284,14 @@
       progressContainer.style.display = 'block';
       uploadProgress.style.display = 'block';
       
-      // Simulate upload progress
+      // Simulate upload progress with realistic timing
       let uploadProgressValue = 0;
       const uploadInterval = setInterval(() => {
-        uploadProgressValue += Math.random() * 20;
+        // Calculate progress based on file sizes for more realistic simulation
+        const totalSize = Array.from(fileInput.files).reduce((sum, file) => sum + file.size, 0);
+        const increment = Math.max(2, Math.min(15, (totalSize / 1024 / 1024) * 2)); // Scale by file size
+        uploadProgressValue += increment;
+        
         if (uploadProgressValue > 100) uploadProgressValue = 100;
         uploadProgressFill.style.width = uploadProgressValue + '%';
         uploadProgressText.textContent = `Uploading files... ${Math.round(uploadProgressValue)}%`;
@@ -295,8 +299,11 @@
         if (uploadProgressValue >= 100) {
           clearInterval(uploadInterval);
           uploadProgressText.textContent = 'Upload complete!';
+          setTimeout(() => {
+            uploadProgress.style.display = 'none';
+          }, 500);
         }
-      }, 200);
+      }, 100);
       
       // Simulate processing progress
       let progress = 0;
