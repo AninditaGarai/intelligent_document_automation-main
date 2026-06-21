@@ -371,6 +371,9 @@
       
       container.appendChild(toast);
       
+      // Log user activity
+      logActivity(type, message);
+      
       setTimeout(() => {
         toast.style.animation = 'slideOut 0.3s ease forwards';
         setTimeout(() => {
@@ -379,6 +382,34 @@
           }
         }, 300);
       }, duration);
+    }
+    
+    // Log user activity for analytics
+    function logActivity(type, message) {
+      const activity = {
+        type: type,
+        message: message,
+        timestamp: new Date().toISOString(),
+        page: window.location.pathname
+      };
+      
+      // Store in localStorage for analytics
+      try {
+        const activities = JSON.parse(localStorage.getItem('user_activities') || '[]');
+        activities.push(activity);
+        
+        // Keep only last 100 activities
+        if (activities.length > 100) {
+          activities.shift();
+        }
+        
+        localStorage.setItem('user_activities', JSON.stringify(activities));
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      // Log to console for debugging
+      console.log('User Activity:', activity);
     }
     
     // Reset form state after page load if there was a successful upload
